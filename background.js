@@ -4,6 +4,17 @@
 let bilibiliTabs = new Set();
 let youtubeTabs = new Set();
 
+// Initialize tracked tabs on startup
+chrome.tabs.query({}, (tabs) => {
+  tabs.forEach(tab => {
+    if (tab.url && tab.url.includes('bilibili.com')) {
+      bilibiliTabs.add(tab.id);
+    } else if (tab.url && tab.url.includes('youtube.com')) {
+      youtubeTabs.add(tab.id);
+    }
+  });
+});
+
 /**
  * Check if URL is target platform
  */
@@ -31,7 +42,8 @@ async function showDailyReport() {
   const result = await chrome.storage.local.get(today);
   const data = result[today];
 
-  if (!data) return;
+  // Only show report if there's meaningful data
+  if (!data || (data.goals.length === 0 && data.visited.length === 0)) return;
 
   // Create new tab with report
   chrome.tabs.create({
