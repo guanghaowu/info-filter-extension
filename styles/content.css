@@ -5,52 +5,58 @@
   display: none !important;
 }
 
-/* Bilibili - Header/navbar hide (zero flash) */
-.bili-header,
-.bili-header__bar,
-.bili-header__logo,
-.bili-header__wrap,
-.bili-header-m,
-.mini-header,
-.mini-header__content,
-.channel-link,
-.right-entry,
-.v-popover-wrap,
-#bili-header,
-header,
-.nav,
-.navbar,
-.top-bar,
-.main-container,
-#app > header,
-.floor-ad,
-/* Aggressive: hide ALL fixed/sticky elements that might flash */
-html > body > *:first-child,
-header, nav, [role="banner"] {
+/* Bilibili - Homepage only: hide header/navbar (zero flash) */
+.info-filter-homepage .bili-header,
+.info-filter-homepage .bili-header__bar,
+.info-filter-homepage .bili-header__logo,
+.info-filter-homepage .bili-header__wrap,
+.info-filter-homepage .bili-header-m,
+.info-filter-homepage .mini-header,
+.info-filter-homepage .mini-header__content,
+.info-filter-homepage .channel-link,
+.info-filter-homepage .right-entry,
+.info-filter-homepage .v-popover-wrap,
+.info-filter-homepage #bili-header,
+.info-filter-homepage header,
+.info-filter-homepage nav,
+.info-filter-homepage .navbar,
+.info-filter-homepage .top-bar,
+.info-filter-homepage .main-container,
+.info-filter-homepage #app > header,
+.info-filter-homepage .floor-ad,
+.info-filter-homepage [role="banner"] {
   display: none !important;
 }
 
-/* Bilibili - Video cards, feed, comments */
-.bili-video-card,
-.feed-card,
-.card-list,
-.video-card,
-.comment-list,
-#comment,
-.bili-video-card__info,
-.bili-video-card__wrap,
-.feed-card-txt,
-.trending-card,
-.recommend-card,
-.hot-card,
-.ranking-card {
+/* Bilibili - Homepage only: hide video cards, feed, comments */
+.info-filter-homepage .bili-video-card,
+.info-filter-homepage .feed-card,
+.info-filter-homepage .card-list,
+.info-filter-homepage .video-card,
+.info-filter-homepage .comment-list,
+.info-filter-homepage #comment,
+.info-filter-homepage .bili-video-card__info,
+.info-filter-homepage .bili-video-card__wrap,
+.info-filter-homepage .feed-card-txt,
+.info-filter-homepage .trending-card,
+.info-filter-homepage .recommend-card,
+.info-filter-homepage .hot-card,
+.info-filter-homepage .ranking-card {
   display: none !important;
 }
 
-/* Bilibili - Video thumbnails and titles */
-.bili-video-card__cover,
-.bili-video-card__info--tit,
-.bili-video-card__info--author {
+/* Bilibili - Homepage only: hide video thumbnails and titles */
+.info-filter-homepage .bili-video-card__cover,
+.info-filter-homepage .bili-video-card__info--tit,
+.info-filter-homepage .bili-video-card__info--author {
+  display: none !important;
+}
+
+/* Bilibili - Search page only: hide sidebar recommendations */
+.info-filter-search .search-right,
+.info-filter-search .recommend-list,
+.info-filter-search .card-box,
+.info-filter-search .recommend {
   display: none !important;
 }
 

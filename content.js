@@ -242,6 +242,13 @@
     console.log('[Content] Platform detected:', currentPlatform, 'isSearchPage:', isSearchPage());
     if (!currentPlatform) return;
 
+    // Mark page type via body class for CSS targeting
+    if (isHomepage() && !isSearchPage()) {
+      document.documentElement.classList.add('info-filter-homepage');
+    } else if (isSearchPage()) {
+      document.documentElement.classList.add('info-filter-search');
+    }
+
     // AGGRESSIVE: Hide entire document immediately, then selectively show
     // This prevents ANY flash of content before overlay is ready
     if (isHomepage() && !isSearchPage()) {
