@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>每日信息摄入报告</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 28px;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .date {
+      color: #666;
+      margin-bottom: 32px;
+      font-size: 16px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .card-title {
+      font-size: 18px;
+      color: #333;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #667eea;
+    }
+
+    .goal-item {
+      padding: 12px;
+      background: #f0f4ff;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 16px;
+      color: #333;
+    }
+
+    .visited-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .visited-item:last-child {
+      border-bottom: none;
+    }
+
+    .visited-title {
+      font-size: 14px;
+      color: #333;
+      flex: 1;
+      margin-right: 16px;
+    }
+
+    .visited-title a {
+      color: #667eea;
+      text-decoration: none;
+    }
+
+    .visited-title a:hover {
+      text-decoration: underline;
+    }
+
+    .visited-meta {
+      font-size: 12px;
+      color: #999;
+      white-space: nowrap;
+    }
+
+    .visited-platform {
+      display: inline-block;
+      padding: 2px 8px;
+      background: #f0f0f0;
+      border-radius: 4px;
+      margin-right: 8px;
+      font-size: 12px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .stat-item {
+      text-align: center;
+      padding: 20px;
+      background: #f0f4ff;
+      border-radius: 8px;
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .escape-item {
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .escape-item:last-child {
+      border-bottom: none;
+    }
+
+    .empty {
+      color: #999;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>每日信息摄入报告</h1>
+    <div class="date" id="date"></div>
+
+    <div class="card">
+      <div class="card-title">今日目标</div>
+      <div id="goals">
+        <div class="empty">未设定目标</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">统计概览</div>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-value" id="visitedCount">0</div>
+          <div class="stat-label">访问页面</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="escapeCount">0</div>
+          <div class="stat-label">破戒次数</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="totalDuration">0</div>
+          <div class="stat-label">总时长(分钟)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">信息摄入清单</div>
+      <div id="visitedList">
+        <div class="empty">今日暂无访问记录</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">破戒记录</div>
+      <div id="escapeList">
+        <div class="empty">今日无破戒记录</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="storage.js"></script>
+  <script src="report.js"></script>
+</body>
+</html>
