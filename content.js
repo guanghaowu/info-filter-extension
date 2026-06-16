@@ -39,6 +39,9 @@
   function showOverlay() {
     if (overlayShown) return;
 
+    // Hide page content immediately
+    document.documentElement.style.visibility = 'hidden';
+
     const iframe = document.createElement('iframe');
     iframe.src = chrome.runtime.getURL('overlay.html');
     iframe.style.cssText = `
@@ -49,6 +52,7 @@
       height: 100%;
       border: none;
       z-index: 999999;
+      visibility: visible;
     `;
     iframe.id = 'info-filter-overlay';
     document.body.appendChild(iframe);
@@ -63,6 +67,8 @@
     if (iframe) {
       iframe.remove();
     }
+    // Restore page visibility
+    document.documentElement.style.visibility = 'visible';
     overlayShown = false;
   }
 
