@@ -1,5 +1,19 @@
 // report.js - Daily report logic
 
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
+function isValidUrl(url) {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   const dateEl = document.getElementById('date');
   const goalsEl = document.getElementById('goals');
@@ -17,9 +31,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Display goals
   if (data.goals.length > 0) {
-    goalsEl.innerHTML = data.goals
-      .map(goal => `<div class="goal-item">${goal}</div>`)
-      .join('');
+    goalsEl.innerHTML = '';
+    data.goals.forEach(goal => {
+      const div = document.createElement('div');
+      div.className = 'goal-item';
+      div.textContent = goal;
+      goalsEl.appendChild(div);
+    });
   }
 
   // Calculate stats
@@ -31,44 +49,59 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Display visited pages
   if (data.visited.length > 0) {
-    visitedListEl.innerHTML = data.visited
-      .map(v => {
-        const time = new Date(v.timestamp).toLocaleTimeString('zh-CN', {
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-        const duration = v.duration ? `${Math.round(v.duration / 60)}分钟` : '';
+    visitedListEl.innerHTML = '';
+    data.visited.forEach(v => {
+      const time = new Date(v.timestamp).toLocaleTimeString('zh-CN', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      const duration = v.duration ? `${Math.round(v.duration / 60)}分钟` : '';
 
-        return `
-          <div class="visited-item">
-            <div class="visited-title">
-              <a href="${v.url}" target="_blank">${v.title || '无标题'}</a>
-            </div>
-            <div class="visited-meta">
-              <span class="visited-platform">${v.platform}</span>
-              ${time} ${duration}
-            </div>
-          </div>
-        `;
-      })
-      .join('');
+      const item = document.createElement('div');
+      item.className = 'visited-item';
+
+      const titleDiv = document.createElement('div');
+      titleDiv.className = 'visited-title';
+
+      if (isValidUrl(v.url)) {
+        const a = document.createElement('a');
+        a.href = v.url;
+        a.target = '_blank';
+        a.textContent = v.title || '无标题';
+        titleDiv.appendChild(a);
+      } else {
+        titleDiv.textContent = v.title || '无标题';
+      }
+
+      const metaDiv = document.createElement('div');
+      metaDiv.className = 'visited-meta';
+
+      const platformSpan = document.createElement('span');
+      platformSpan.className = 'visited-platform';
+      platformSpan.textContent = v.platform || '';
+
+      metaDiv.appendChild(platformSpan);
+      metaDiv.appendChild(document.createTextNode(`${time} ${duration}`));
+
+      item.appendChild(titleDiv);
+      item.appendChild(metaDiv);
+      visitedListEl.appendChild(item);
+    });
   }
 
   // Display escapes
   if (data.escapes.length > 0) {
-    escapeListEl.innerHTML = data.escapes
-      .map(e => {
-        const time = new Date(e.timestamp).toLocaleTimeString('zh-CN', {
-          hour: '2-digit',
-          minute: '2-digit'
-        });
+    escapeListEl.innerHTML = '';
+    data.escapes.forEach(e => {
+      const time = new Date(e.timestamp).toLocaleTimeString('zh-CN', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
 
-        return `
-          <div class="escape-item">
-            ${time} - ${e.platform} - ${e.section}
-          </div>
-        `;
-      })
-      .join('');
+      const div = document.createElement('div');
+      div.className = 'escape-item';
+      div.textContent = `${time} - ${e.platform || ''} - ${e.section || ''}`;
+      escapeListEl.appendChild(div);
+    });
   }
 });

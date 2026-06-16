@@ -11,11 +11,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Display goals
   if (data.goals.length > 0) {
-    goalList.innerHTML = data.goals
-      .map(goal => `<li class="goal-item">${goal}</li>`)
-      .join('');
+    goalList.innerHTML = '';
+    data.goals.forEach(goal => {
+      const li = document.createElement('li');
+      li.className = 'goal-item';
+      li.textContent = goal;
+      goalList.appendChild(li);
+    });
   } else {
-    goalList.innerHTML = '<li class="goal-item">未设定目标</li>';
+    const li = document.createElement('li');
+    li.className = 'goal-item';
+    li.textContent = '未设定目标';
+    goalList.appendChild(li);
   }
 
   // Display stats
