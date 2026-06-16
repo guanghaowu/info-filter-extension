@@ -242,17 +242,24 @@
     console.log('[Content] Platform detected:', currentPlatform, 'isSearchPage:', isSearchPage());
     if (!currentPlatform) return;
 
+    // Check if navigated from bilibili (referral from overlay)
+    const fromBilibili = document.referrer && document.referrer.includes('bilibili.com');
+
     // Mark page type via body class for CSS targeting
     if (isHomepage() && !isSearchPage()) {
       document.documentElement.classList.add('info-filter-homepage');
     } else if (isSearchPage()) {
       document.documentElement.classList.add('info-filter-search');
+      // If coming from bilibili overlay, also apply homepage hiding during transition
+      if (fromBilibili) {
+        document.documentElement.classList.add('info-filter-homepage');
+      }
     }
 
     // AGGRESSIVE: Hide entire document immediately, then selectively show
     // This prevents ANY flash of content before overlay is ready
     if (isHomepage() && !isSearchPage()) {
-      // Step 1: Hide ALL body children instantly via CSS injection
+      // Homepage: full nuclear hide
       const earlyHide = document.createElement('style');
       earlyHide.id = 'info-filter-early-hide';
       earlyHide.textContent = `
@@ -262,8 +269,6 @@
       `;
       document.documentElement.appendChild(earlyHide);
 
-      // Step 2: Also force-hide known bilibili header elements via JS
-      // (CSS selectors may miss nested elements or be overridden by bilibili's CSS)
       const headerSelectors = [
         '#bili-header', '.bili-header', '.bili-header__bar',
         '.mini-header', 'header', 'nav', '.navbar', '.top-bar',
@@ -277,11 +282,60 @@
         } catch(e) {}
       });
 
-      // Step 3: Create white cover immediately
       const cover = document.createElement('div');
       cover.id = 'info-filter-cover';
       cover.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483647;background:white;';
       document.documentElement.appendChild(cover);
+    } else if (isSearchPage() && fromBilibili) {
+      // Search page from bilibili: also nuclear hide during transition
+      const earlyHide = document.createElement('style');
+      earlyHide.id = 'info-filter-early-hide';
+      earlyHide.textContent = `
+        body > *:not(#info-filter-cover):not(#info-filter-overlay) {
+          display: none !important;
+        }
+      `;
+      document.documentElement.appendChild(earlyHide);
+
+      const headerSelectors = [
+        '#bili-header', '.bili-header', '.bili-header__bar',
+        '.mini-header', 'header', 'nav', '.navbar', '.top-bar',
+        '#app > div:first-child'
+      ];
+      headerSelectors.forEach(sel => {
+        try {
+          document.querySelectorAll(sel).forEach(el => {
+            el.style.setProperty('display', 'none', 'important');
+          });
+        } catch(e) {}
+      });
+
+      const cover = document.createElement('div');
+      cover.id = 'info-filter-cover';
+      cover.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483647;background:white;';
+      document.documentElement.appendChild(cover);
+
+      // After search results load, remove homepage hiding and show results
+      const waitForResults = () => {
+        // Remove nuclear hide style
+        const styleEl = document.getElementById('info-filter-early-hide');
+        if (styleEl) styleEl.remove();
+        // Remove cover
+        const coverEl = document.getElementById('info-filter-cover');
+        if (coverEl) coverEl.remove();
+        // Remove homepage class (keep search class)
+        document.documentElement.classList.remove('info-filter-homepage');
+        // Restore body overflow
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+      };
+
+      // Wait for search results to appear
+      if (document.readyState === 'complete') {
+        setTimeout(waitForResults, 300);
+      } else {
+        window.addEventListener('load', () => setTimeout(waitForResults, 300));
+      }
     }
 
     // Show overlay on homepage only (not on search results)
