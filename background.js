@@ -6,6 +6,7 @@ let youtubeTabs = new Set();
 
 // Initialize tracked tabs on startup
 chrome.tabs.query({}, (tabs) => {
+  if (!tabs) return;
   tabs.forEach(tab => {
     if (tab.url && tab.url.includes('bilibili.com')) {
       bilibiliTabs.add(tab.id);
