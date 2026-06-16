@@ -1,26 +1,31 @@
 /* content.css - Hide recommended content */
 
-/* Bilibili - Homepage feed */
+/* Universal hidden class */
 .info-filter-hidden {
   display: none !important;
 }
 
-/* Bilibili - Homepage recommended videos */
-.info-filter-bilibili-home .bili-video-card,
-.info-filter-bilibili-home .feed-card,
-.info-filter-bilibili-home .card-list {
+/* Bilibili - HIDE EVERYTHING on homepage (CSS injects before JS, fastest possible) */
+.bili-video-card,
+.feed-card,
+.card-list,
+.video-card,
+.comment-list,
+#comment,
+.bili-video-card__info,
+.bili-video-card__wrap,
+.feed-card-txt,
+.trending-card,
+.recommend-card,
+.hot-card,
+.ranking-card {
   display: none !important;
 }
 
-/* Bilibili - Sidebar recommended */
-.info-filter-bilibili-sidebar .video-card,
-.info-filter-bilibili-sidebar .bili-video-card {
-  display: none !important;
-}
-
-/* Bilibili - Comments */
-.info-filter-bilibili-comments .comment-list,
-.info-filter-bilibili-comments #comment {
+/* Bilibili - Hide video thumbnails and titles on homepage */
+.bili-video-card__cover,
+.bili-video-card__info--tit,
+.bili-video-card__info--author {
   display: none !important;
 }
 

@@ -247,7 +247,7 @@
       const cover = document.createElement('div');
       cover.id = 'info-filter-cover';
       cover.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483647;background:white;';
-      (document.head || document.documentElement).appendChild(cover);
+      document.documentElement.appendChild(cover);
     }
 
     // Show overlay on homepage only (not on search results)
