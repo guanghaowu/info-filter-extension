@@ -6,6 +6,8 @@
   let startTime = Date.now();
   let currentPlatform = null;
   let overlayShown = false;
+  let currentDayKey = null;
+  let currentVisitedIndex = null;
 
   /**
    * Detect current platform
@@ -137,7 +139,9 @@
   async function trackVisit() {
     const title = document.title;
     const url = window.location.href;
-    await InfoFilterStorage.addVisited(currentPlatform, title, url);
+    const data = await InfoFilterStorage.addVisited(currentPlatform, title, url);
+    currentDayKey = InfoFilterStorage.getToday();
+    currentVisitedIndex = data.visited.length - 1;
   }
 
   /**
@@ -145,13 +149,13 @@
    */
   function setupDurationTracking() {
     window.addEventListener('beforeunload', () => {
+      if (currentDayKey === null || currentVisitedIndex === null) return;
       const duration = Math.floor((Date.now() - startTime) / 1000);
-      // Use synchronous storage call - chrome.storage.local.set doesn't need await
-      const data = InfoFilterStorage.getTodayData();
-      data.then(d => {
-        if (d.visited.length > 0) {
-          d.visited[d.visited.length - 1].duration = duration;
-          chrome.storage.local.set({ [InfoFilterStorage.getToday()]: d });
+      chrome.storage.local.get(currentDayKey, (result) => {
+        const data = result[currentDayKey];
+        if (data && data.visited[currentVisitedIndex]) {
+          data.visited[currentVisitedIndex].duration = duration;
+          chrome.storage.local.set({ [currentDayKey]: data });
         }
       });
     });
