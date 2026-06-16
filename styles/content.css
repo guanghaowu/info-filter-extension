@@ -5,7 +5,32 @@
   display: none !important;
 }
 
-/* Bilibili - HIDE EVERYTHING on homepage (CSS injects before JS, fastest possible) */
+/* Bilibili - Header/navbar hide (zero flash) */
+.bili-header,
+.bili-header__bar,
+.bili-header__logo,
+.bili-header__wrap,
+.bili-header-m,
+.mini-header,
+.mini-header__content,
+.channel-link,
+.right-entry,
+.v-popover-wrap,
+#bili-header,
+header,
+.nav,
+.navbar,
+.top-bar,
+.main-container,
+#app > header,
+.floor-ad,
+/* Aggressive: hide ALL fixed/sticky elements that might flash */
+html > body > *:first-child,
+header, nav, [role="banner"] {
+  display: none !important;
+}
+
+/* Bilibili - Video cards, feed, comments */
 .bili-video-card,
 .feed-card,
 .card-list,
@@ -22,7 +47,7 @@
   display: none !important;
 }
 
-/* Bilibili - Hide video thumbnails and titles on homepage */
+/* Bilibili - Video thumbnails and titles */
 .bili-video-card__cover,
 .bili-video-card__info--tit,
 .bili-video-card__info--author {

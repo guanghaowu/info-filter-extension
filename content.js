@@ -242,8 +242,35 @@
     console.log('[Content] Platform detected:', currentPlatform, 'isSearchPage:', isSearchPage());
     if (!currentPlatform) return;
 
-    // IMMEDIATELY cover entire page with white overlay (before any content loads)
+    // AGGRESSIVE: Hide entire document immediately, then selectively show
+    // This prevents ANY flash of content before overlay is ready
     if (isHomepage() && !isSearchPage()) {
+      // Step 1: Hide ALL body children instantly via CSS injection
+      const earlyHide = document.createElement('style');
+      earlyHide.id = 'info-filter-early-hide';
+      earlyHide.textContent = `
+        body > *:not(#info-filter-cover):not(#info-filter-overlay) {
+          display: none !important;
+        }
+      `;
+      document.documentElement.appendChild(earlyHide);
+
+      // Step 2: Also force-hide known bilibili header elements via JS
+      // (CSS selectors may miss nested elements or be overridden by bilibili's CSS)
+      const headerSelectors = [
+        '#bili-header', '.bili-header', '.bili-header__bar',
+        '.mini-header', 'header', 'nav', '.navbar', '.top-bar',
+        '#app > div:first-child'
+      ];
+      headerSelectors.forEach(sel => {
+        try {
+          document.querySelectorAll(sel).forEach(el => {
+            el.style.setProperty('display', 'none', 'important');
+          });
+        } catch(e) {}
+      });
+
+      // Step 3: Create white cover immediately
       const cover = document.createElement('div');
       cover.id = 'info-filter-cover';
       cover.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483647;background:white;';
