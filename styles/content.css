@@ -1,0 +1,60 @@
+/* content.css - Hide recommended content */
+
+/* Bilibili - Homepage feed */
+.info-filter-hidden {
+  display: none !important;
+}
+
+/* Bilibili - Homepage recommended videos */
+.info-filter-bilibili-home .bili-video-card,
+.info-filter-bilibili-home .feed-card,
+.info-filter-bilibili-home .card-list {
+  display: none !important;
+}
+
+/* Bilibili - Sidebar recommended */
+.info-filter-bilibili-sidebar .video-card,
+.info-filter-bilibili-sidebar .bili-video-card {
+  display: none !important;
+}
+
+/* Bilibili - Comments */
+.info-filter-bilibili-comments .comment-list,
+.info-filter-bilibili-comments #comment {
+  display: none !important;
+}
+
+/* YouTube - Homepage feed */
+.info-filter-youtube-home ytd-rich-grid-row,
+.info-filter-youtube-home ytd-rich-item-renderer {
+  display: none !important;
+}
+
+/* YouTube - Sidebar recommended */
+.info-filter-youtube-sidebar ytd-compact-video-renderer,
+.info-filter-youtube-sidebar ytd-compact-autoplay-renderer {
+  display: none !important;
+}
+
+/* YouTube - Comments */
+.info-filter-youtube-comments ytd-comments {
+  display: none !important;
+}
+
+/* Escape button styles */
+.info-filter-escape-btn {
+  position: fixed;
+  z-index: 9999;
+  padding: 8px 16px;
+  background: rgba(255, 165, 0, 0.9);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.info-filter-escape-btn:hover {
+  background: rgba(255, 140, 0, 0.9);
+}
