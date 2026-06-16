@@ -1,6 +1,10 @@
 // background.js - Background service worker
 
-// Simple service worker - just keep alive
-chrome.runtime.onInstalled.addListener(() => {
-  console.log('信息源过滤器已安装');
+chrome.runtime.onInstalled.addListener((details) => {
+  console.log('信息源过滤器已安装', details.reason);
+});
+
+// Keep service worker alive
+chrome.runtime.onStartup.addListener(() => {
+  console.log('信息源过滤器启动');
 });

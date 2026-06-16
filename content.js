@@ -20,9 +20,17 @@
   }
 
   /**
+   * Check if on search results page
+   */
+  function isSearchPage() {
+    return window.location.hostname === 'search.bilibili.com';
+  }
+
+  /**
    * Check if homepage
    */
   function isHomepage() {
+    if (isSearchPage()) return false;
     const path = window.location.pathname;
     if (currentPlatform === 'bilibili') {
       return path === '/' || path === '/index.html';
@@ -38,37 +46,65 @@
    */
   function showOverlay() {
     if (overlayShown) return;
+    overlayShown = true;
 
-    // Hide page content immediately
-    document.documentElement.style.visibility = 'hidden';
+    // Wait for body to be ready
+    if (!document.body) {
+      document.addEventListener('DOMContentLoaded', () => {
+        if (!overlayShown) return;
+        actuallyShowOverlay();
+      });
+      return;
+    }
 
-    const iframe = document.createElement('iframe');
-    iframe.src = chrome.runtime.getURL('overlay.html');
-    iframe.style.cssText = `
+    actuallyShowOverlay();
+  }
+
+  function actuallyShowOverlay() {
+    // Create overlay container
+    const container = document.createElement('div');
+    container.id = 'info-filter-overlay';
+    container.style.cssText = `
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      border: none;
-      z-index: 999999;
-      visibility: visible;
+      z-index: 2147483647;
+      background: white;
     `;
-    iframe.id = 'info-filter-overlay';
-    document.body.appendChild(iframe);
-    overlayShown = true;
+
+    // Load overlay.html content via iframe
+    const iframe = document.createElement('iframe');
+    iframe.src = chrome.runtime.getURL('overlay.html');
+    iframe.style.cssText = `
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    `;
+    container.appendChild(iframe);
+
+    // Hide page content behind overlay
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    document.body.appendChild(container);
   }
 
   /**
    * Remove overlay
    */
   function removeOverlay() {
-    const iframe = document.getElementById('info-filter-overlay');
-    if (iframe) {
-      iframe.remove();
+    const container = document.getElementById('info-filter-overlay');
+    if (container) {
+      container.remove();
     }
-    // Restore page visibility
-    document.documentElement.style.visibility = 'visible';
+    // Restore page scroll
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
     overlayShown = false;
   }
 
@@ -77,22 +113,29 @@
    */
   function hideContent() {
     if (currentPlatform === 'bilibili') {
-      // Hide homepage feed
-      if (isHomepage()) {
-        document.querySelectorAll('.bili-video-card, .feed-card, .card-list').forEach(el => {
+      if (isSearchPage()) {
+        // On search page: only hide sidebar/recommendations, keep search results
+        document.querySelectorAll('.search-right, .recommend-list, .card-box, .recommend').forEach(el => {
+          el.classList.add('info-filter-hidden');
+        });
+      } else {
+        // Hide homepage feed
+        if (isHomepage()) {
+          document.querySelectorAll('.bili-video-card, .feed-card, .card-list').forEach(el => {
+            el.classList.add('info-filter-hidden');
+          });
+        }
+
+        // Hide sidebar
+        document.querySelectorAll('.video-card, .bili-video-card').forEach(el => {
+          el.classList.add('info-filter-hidden');
+        });
+
+        // Hide comments
+        document.querySelectorAll('.comment-list, #comment').forEach(el => {
           el.classList.add('info-filter-hidden');
         });
       }
-
-      // Hide sidebar
-      document.querySelectorAll('.video-card, .bili-video-card').forEach(el => {
-        el.classList.add('info-filter-hidden');
-      });
-
-      // Hide comments
-      document.querySelectorAll('.comment-list, #comment').forEach(el => {
-        el.classList.add('info-filter-hidden');
-      });
     }
 
     if (currentPlatform === 'youtube') {
@@ -171,8 +214,17 @@
    * Listen for overlay messages
    */
   window.addEventListener('message', (event) => {
-    if (event.origin !== chrome.runtime.getURL('').replace(/\/$/, '')) return;
-    if (event.data.type === 'INFO_FILTER_GOAL_SET') {
+    const expectedOrigin = chrome.runtime.getURL('').replace(/\/$/, '');
+    console.log('[Content] Message received from:', event.origin, 'expected:', expectedOrigin, 'data:', event.data);
+
+    // Accept messages from our extension origin OR from extension iframe
+    if (event.origin !== expectedOrigin && !event.origin.startsWith('chrome-extension://')) {
+      console.log('[Content] Message rejected - origin mismatch');
+      return;
+    }
+
+    if (event.data && event.data.type === 'INFO_FILTER_GOAL_SET') {
+      console.log('[Content] Goal set! Removing overlay');
       removeOverlay();
       hideContent();
     }
@@ -183,11 +235,23 @@
    */
   async function init() {
     currentPlatform = detectPlatform();
+    console.log('[Content] Platform detected:', currentPlatform, 'isSearchPage:', isSearchPage());
     if (!currentPlatform) return;
 
-    // Check if goal set today
-    const hasGoal = await InfoFilterStorage.hasGoalToday();
-    if (!hasGoal) {
+    // Immediately hide homepage feed via CSS (before DOM fully loads)
+    if (isHomepage() && !isSearchPage()) {
+      const style = document.createElement('style');
+      style.textContent = `
+        .bili-video-card, .feed-card, .card-list,
+        .video-card, .comment-list, #comment {
+          display: none !important;
+        }
+      `;
+      (document.head || document.documentElement).appendChild(style);
+    }
+
+    // Show overlay on homepage only (not on search results)
+    if (isHomepage() && !isSearchPage()) {
       showOverlay();
     } else {
       hideContent();
