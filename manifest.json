@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "信息源过滤器",
+  "version": "1.0.0",
+  "description": "帮助你在B站/YouTube学习时避免被算法推荐内容吸引",
+  "permissions": [
+    "storage",
+    "tabs",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://www.bilibili.com/*",
+    "https://www.youtube.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.bilibili.com/*",
+        "https://www.youtube.com/*"
+      ],
+      "js": ["storage.js", "content.js"],
+      "css": ["styles/content.css"],
+      "run_at": "document_start"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
