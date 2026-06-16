@@ -102,4 +102,4 @@ const Storage = {
 };
 
 // Make available globally
-window.Storage = Storage;
+window.InfoFilterStorage = Storage;

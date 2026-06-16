@@ -5,10 +5,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const submitBtn = document.getElementById('submitBtn');
 
   // Check if goal already set today
-  const hasGoal = await Storage.hasGoalToday();
+  const hasGoal = await InfoFilterStorage.hasGoalToday();
   if (hasGoal) {
     // Remove overlay and let user proceed
-    window.parent.postMessage({ type: 'INFO_FILTER_GOAL_SET' }, '*');
+    window.parent.postMessage({ type: 'INFO_FILTER_GOAL_SET' }, chrome.runtime.getURL('/'));
     return;
   }
 
@@ -21,8 +21,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    await Storage.addGoal(goalText);
-    window.parent.postMessage({ type: 'INFO_FILTER_GOAL_SET' }, '*');
+    await InfoFilterStorage.addGoal(goalText);
+    window.parent.postMessage({ type: 'INFO_FILTER_GOAL_SET' }, chrome.runtime.getURL('/'));
   };
 
   submitBtn.addEventListener('click', submitGoal);
