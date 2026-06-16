@@ -71,45 +71,39 @@
     if (currentPlatform === 'bilibili') {
       // Hide homepage feed
       if (isHomepage()) {
-        const feed = document.querySelector('.bili-video-card, .feed-card, .card-list');
-        if (feed) {
-          feed.classList.add('info-filter-hidden');
-        }
+        document.querySelectorAll('.bili-video-card, .feed-card, .card-list').forEach(el => {
+          el.classList.add('info-filter-hidden');
+        });
       }
 
       // Hide sidebar
-      const sidebar = document.querySelector('.video-card, .bili-video-card');
-      if (sidebar) {
-        sidebar.classList.add('info-filter-hidden');
-      }
+      document.querySelectorAll('.video-card, .bili-video-card').forEach(el => {
+        el.classList.add('info-filter-hidden');
+      });
 
       // Hide comments
-      const comments = document.querySelector('.comment-list, #comment');
-      if (comments) {
-        comments.classList.add('info-filter-hidden');
-      }
+      document.querySelectorAll('.comment-list, #comment').forEach(el => {
+        el.classList.add('info-filter-hidden');
+      });
     }
 
     if (currentPlatform === 'youtube') {
       // Hide homepage feed
       if (isHomepage()) {
-        const feed = document.querySelector('ytd-rich-grid-row, ytd-rich-item-renderer');
-        if (feed) {
-          feed.classList.add('info-filter-hidden');
-        }
+        document.querySelectorAll('ytd-rich-grid-row, ytd-rich-item-renderer').forEach(el => {
+          el.classList.add('info-filter-hidden');
+        });
       }
 
       // Hide sidebar
-      const sidebar = document.querySelector('ytd-compact-video-renderer, ytd-compact-autoplay-renderer');
-      if (sidebar) {
-        sidebar.classList.add('info-filter-hidden');
-      }
+      document.querySelectorAll('ytd-compact-video-renderer, ytd-compact-autoplay-renderer').forEach(el => {
+        el.classList.add('info-filter-hidden');
+      });
 
       // Hide comments
-      const comments = document.querySelector('ytd-comments');
-      if (comments) {
-        comments.classList.add('info-filter-hidden');
-      }
+      document.querySelectorAll('ytd-comments').forEach(el => {
+        el.classList.add('info-filter-hidden');
+      });
     }
   }
 
@@ -150,9 +144,16 @@
    * Update duration on page leave
    */
   function setupDurationTracking() {
-    window.addEventListener('beforeunload', async () => {
+    window.addEventListener('beforeunload', () => {
       const duration = Math.floor((Date.now() - startTime) / 1000);
-      await InfoFilterStorage.updateLastVisitedDuration(duration);
+      // Use synchronous storage call - chrome.storage.local.set doesn't need await
+      const data = InfoFilterStorage.getTodayData();
+      data.then(d => {
+        if (d.visited.length > 0) {
+          d.visited[d.visited.length - 1].duration = duration;
+          chrome.storage.local.set({ [InfoFilterStorage.getToday()]: d });
+        }
+      });
     });
   }
 
@@ -160,6 +161,7 @@
    * Listen for overlay messages
    */
   window.addEventListener('message', (event) => {
+    if (event.origin !== chrome.runtime.getURL('').replace(/\/$/, '')) return;
     if (event.data.type === 'INFO_FILTER_GOAL_SET') {
       removeOverlay();
       hideContent();
