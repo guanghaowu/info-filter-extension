@@ -24,8 +24,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       const data = result[today] || { goals: [], visited: [], escapes: [] };
       data.goals.push(goalText);
       await chrome.storage.local.set({ [today]: data });
-      console.log('[Overlay] Goal saved, notifying parent');
-      window.parent.postMessage({ type: 'INFO_FILTER_GOAL_SET' }, '*');
+      console.log('[Overlay] Goal saved, redirecting to search');
+      const searchUrl = 'https://search.bilibili.com/all?keyword=' + encodeURIComponent(goalText);
+      window.parent.location.href = searchUrl;
     });
     return;
   }
@@ -43,10 +44,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await InfoFilterStorage.addGoal(goalText);
     console.log('[Overlay] Goal saved, redirecting to search');
 
-    // Notify parent to remove overlay
-    window.parent.postMessage({ type: 'INFO_FILTER_GOAL_SET' }, '*');
-
-    // Redirect to B站 search results for this goal
+    // Redirect directly - page navigation will clean up overlay
     const searchUrl = 'https://search.bilibili.com/all?keyword=' + encodeURIComponent(goalText);
     window.parent.location.href = searchUrl;
   };

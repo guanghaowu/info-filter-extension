@@ -61,6 +61,10 @@
   }
 
   function actuallyShowOverlay() {
+    // Remove initial cover
+    const cover = document.getElementById('info-filter-cover');
+    if (cover) cover.remove();
+
     // Create overlay container
     const container = document.createElement('div');
     container.id = 'info-filter-overlay';
@@ -238,16 +242,12 @@
     console.log('[Content] Platform detected:', currentPlatform, 'isSearchPage:', isSearchPage());
     if (!currentPlatform) return;
 
-    // Immediately hide homepage feed via CSS (before DOM fully loads)
+    // IMMEDIATELY cover entire page with white overlay (before any content loads)
     if (isHomepage() && !isSearchPage()) {
-      const style = document.createElement('style');
-      style.textContent = `
-        .bili-video-card, .feed-card, .card-list,
-        .video-card, .comment-list, #comment {
-          display: none !important;
-        }
-      `;
-      (document.head || document.documentElement).appendChild(style);
+      const cover = document.createElement('div');
+      cover.id = 'info-filter-cover';
+      cover.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483647;background:white;';
+      (document.head || document.documentElement).appendChild(cover);
     }
 
     // Show overlay on homepage only (not on search results)
