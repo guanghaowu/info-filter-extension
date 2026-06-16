@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const hasGoal = await InfoFilterStorage.hasGoalToday();
   if (hasGoal) {
     // Remove overlay and let user proceed
-    window.parent.postMessage({ type: 'INFO_FILTER_GOAL_SET' }, chrome.runtime.getURL('/'));
+    window.parent.postMessage({ type: 'INFO_FILTER_GOAL_SET' }, chrome.runtime.getURL(''));
     return;
   }
 
@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     await InfoFilterStorage.addGoal(goalText);
-    window.parent.postMessage({ type: 'INFO_FILTER_GOAL_SET' }, chrome.runtime.getURL('/'));
+    window.parent.postMessage({ type: 'INFO_FILTER_GOAL_SET' }, chrome.runtime.getURL(''));
   };
 
   submitBtn.addEventListener('click', submitGoal);
