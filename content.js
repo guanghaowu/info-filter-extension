@@ -3,6 +3,15 @@
 (function() {
   'use strict';
 
+  // EARLIEST POSSIBLE: Inject hiding rules BEFORE any DOM operations
+  // This runs at document_start, before bilibili renders anything
+  if (window.location.hostname === 'bilibili.com' ||
+      window.location.hostname === 'www.bilibili.com') {
+    const s = document.createElement('style');
+    s.textContent = '#app > * { display: none !important; }';
+    document.documentElement.appendChild(s);
+  }
+
   let startTime = Date.now();
   let currentPlatform = null;
   let overlayShown = false;
