@@ -5,11 +5,19 @@
 
   // EARLIEST POSSIBLE: Inject hiding rules BEFORE any DOM operations
   // This runs at document_start, before bilibili renders anything
+  // Only apply on homepage (not video pages /search pages)
   if (window.location.hostname === 'bilibili.com' ||
       window.location.hostname === 'www.bilibili.com') {
-    const s = document.createElement('style');
-    s.textContent = '#app > * { display: none !important; }';
-    document.documentElement.appendChild(s);
+    const path = window.location.pathname;
+    const isHomepagePath = (path === '/' || path === '/index.html');
+    const isVideoPath = path.startsWith('/video/');
+    const isSearchHost = window.location.hostname === 'search.bilibili.com';
+    if (isHomepagePath && !isVideoPath && !isSearchHost) {
+      const s = document.createElement('style');
+      s.textContent = '#app > * { display: none !important; }';
+      s.id = 'info-filter-early-hide';
+      document.documentElement.appendChild(s);
+    }
   }
 
   let startTime = Date.now();
@@ -36,10 +44,24 @@
   }
 
   /**
+   * Check if on a video/watch page (not homepage, not search)
+   */
+  function isVideoPage() {
+    const path = window.location.pathname;
+    if (currentPlatform === 'bilibili') {
+      return path.startsWith('/video/');
+    }
+    if (currentPlatform === 'youtube') {
+      return path === '/watch';
+    }
+    return false;
+  }
+
+  /**
    * Check if homepage
    */
   function isHomepage() {
-    if (isSearchPage()) return false;
+    if (isSearchPage() || isVideoPage()) return false;
     const path = window.location.pathname;
     if (currentPlatform === 'bilibili') {
       return path === '/' || path === '/index.html';
@@ -238,6 +260,9 @@
 
     if (event.data && event.data.type === 'INFO_FILTER_GOAL_SET') {
       console.log('[Content] Goal set! Removing overlay');
+      // Remove early-hide style (no longer needed after goal is set)
+      const earlyHideEl = document.getElementById('info-filter-early-hide');
+      if (earlyHideEl) earlyHideEl.remove();
       removeOverlay();
       hideContent();
     }
@@ -363,6 +388,8 @@
     // Re-apply hiding on navigation (for SPAs)
     const observer = new MutationObserver(() => {
       if (overlayShown) return;
+      // Don't hide content on video pages — user navigated here intentionally
+      if (isVideoPage()) return;
       hideContent();
     });
 
@@ -370,6 +397,46 @@
       childList: true,
       subtree: true
     });
+
+    // Watch for SPA route changes (bilibili uses pushState/replaceState)
+    let lastUrl = location.href;
+    const urlObserver = new MutationObserver(() => {
+      if (location.href !== lastUrl) {
+        lastUrl = location.href;
+        onUrlChange();
+      }
+    });
+    urlObserver.observe(document, { subtree: true, childList: true });
+
+    function onUrlChange() {
+      const isHome = isHomepage();
+      const isVid = isVideoPage();
+      const isSearch = isSearchPage();
+
+      // On video/search pages: remove homepage-specific hiding
+      if (!isHome) {
+        // Remove early-hide style if still present
+        const earlyHideEl = document.getElementById('info-filter-early-hide');
+        if (earlyHideEl) earlyHideEl.remove();
+
+        // Remove homepage class (so CSS rules stop targeting this page)
+        document.documentElement.classList.remove('info-filter-homepage');
+
+        // Restore scroll
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+      }
+
+      if (isVid) {
+        // On video page: ensure nothing is hidden
+        document.querySelectorAll('.info-filter-hidden').forEach(el => {
+          el.classList.remove('info-filter-hidden');
+        });
+      } else if (!isHome) {
+        // On non-homepage, non-video page (e.g. channel): apply search-level hiding only
+        hideContent();
+      }
+    }
   }
 
   // Wait for DOM ready

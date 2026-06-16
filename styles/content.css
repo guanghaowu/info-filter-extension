@@ -29,6 +29,7 @@
 }
 
 /* Bilibili - Homepage only: hide video cards, feed, comments */
+/* Scoped to homepage feed container to avoid hiding video page content */
 .info-filter-homepage .bili-video-card,
 .info-filter-homepage .feed-card,
 .info-filter-homepage .card-list,
