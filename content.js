@@ -3,8 +3,13 @@
 (function() {
   'use strict';
 
-  // EARLIEST POSSIBLE: No longer needed — init() handles early-hide creation
-  // after DOM is available, which is sufficient since overlay covers the page anyway
+  // EARLIEST POSSIBLE: Nuclear CSS hide — inject BEFORE browser renders anything
+  // This is the only way to eliminate flash on SSR pages (bilibili/YouTube)
+  // Must run at document_start, before ANY DOM manipulation
+  const nuclearStyle = document.createElement('style');
+  nuclearStyle.id = 'info-filter-nuclear-hide';
+  nuclearStyle.textContent = 'html,body,* { display: none !important; }';
+  document.documentElement.appendChild(nuclearStyle);
 
   let startTime = Date.now();
   let currentPlatform = null;
@@ -250,9 +255,12 @@
 
     if (event.data && event.data.type === 'INFO_FILTER_GOAL_SET') {
       console.log('[Content] Goal set! Removing overlay');
-      // Remove early-hide style (no longer needed after goal is set)
-      const earlyHideEl = document.getElementById('info-filter-early-hide');
-      if (earlyHideEl) earlyHideEl.remove();
+      // Remove nuclear hide so page content becomes visible
+      const nuclearHideEl = document.getElementById('info-filter-nuclear-hide');
+      if (nuclearHideEl) nuclearHideEl.remove();
+      // Remove white cover
+      const coverEl = document.getElementById('info-filter-cover');
+      if (coverEl) coverEl.remove();
       removeOverlay();
       hideContent();
     }
@@ -284,86 +292,20 @@
       }
     }
 
-    // AGGRESSIVE: Hide entire document immediately, then selectively show
-    // This prevents ANY flash of content before overlay is ready
-    if (isHomepage() && !isSearchPage()) {
-      // Homepage: full nuclear hide
-      const earlyHide = document.createElement('style');
-      earlyHide.id = 'info-filter-early-hide';
-      earlyHide.textContent = `
-        body > *:not(#info-filter-cover):not(#info-filter-overlay) {
-          display: none !important;
-        }
-      `;
-      document.documentElement.appendChild(earlyHide);
-
-      const headerSelectors = [
-        '#bili-header', '.bili-header', '.bili-header__bar',
-        '.mini-header', 'header', 'nav', '.navbar', '.top-bar',
-        '#app > div:first-child'
-      ];
-      headerSelectors.forEach(sel => {
-        try {
-          document.querySelectorAll(sel).forEach(el => {
-            el.style.setProperty('display', 'none', 'important');
-          });
-        } catch(e) {}
-      });
-
+    // AGGRESSIVE: Nuclear hide already applied at top of file (document_start)
+    // No need for duplicate early-hide in init()
+    // For search pages: remove nuclear-hide immediately (no overlay needed)
+    if (isSearchPage()) {
+      const nuclearHideEl = document.getElementById('info-filter-nuclear-hide');
+      if (nuclearHideEl) nuclearHideEl.remove();
+      const coverEl = document.getElementById('info-filter-cover');
+      if (coverEl) coverEl.remove();
+    } else {
+      // Homepage: show the cover while nuclear-hide keeps everything invisible
       const cover = document.createElement('div');
       cover.id = 'info-filter-cover';
       cover.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483647;background:white;';
       document.documentElement.appendChild(cover);
-    } else if (isSearchPage() && fromBilibili) {
-      // Search page from bilibili: also nuclear hide during transition
-      const earlyHide = document.createElement('style');
-      earlyHide.id = 'info-filter-early-hide';
-      earlyHide.textContent = `
-        body > *:not(#info-filter-cover):not(#info-filter-overlay) {
-          display: none !important;
-        }
-      `;
-      document.documentElement.appendChild(earlyHide);
-
-      const headerSelectors = [
-        '#bili-header', '.bili-header', '.bili-header__bar',
-        '.mini-header', 'header', 'nav', '.navbar', '.top-bar',
-        '#app > div:first-child'
-      ];
-      headerSelectors.forEach(sel => {
-        try {
-          document.querySelectorAll(sel).forEach(el => {
-            el.style.setProperty('display', 'none', 'important');
-          });
-        } catch(e) {}
-      });
-
-      const cover = document.createElement('div');
-      cover.id = 'info-filter-cover';
-      cover.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483647;background:white;';
-      document.documentElement.appendChild(cover);
-
-      // After search results load, remove homepage hiding and show results
-      const waitForResults = () => {
-        // Remove nuclear hide style
-        const styleEl = document.getElementById('info-filter-early-hide');
-        if (styleEl) styleEl.remove();
-        // Remove cover
-        const coverEl = document.getElementById('info-filter-cover');
-        if (coverEl) coverEl.remove();
-        // Remove homepage class (keep search class)
-        document.documentElement.classList.remove('info-filter-homepage');
-        // Restore body overflow
-        document.body.style.overflow = '';
-        document.documentElement.style.overflow = '';
-      };
-
-      // Wait for search results to appear
-      if (document.readyState === 'complete') {
-        setTimeout(waitForResults, 300);
-      } else {
-        window.addEventListener('load', () => setTimeout(waitForResults, 300));
-      }
     }
 
     // Show overlay on homepage only (not on search results)
@@ -416,9 +358,13 @@
 
       // On video/search pages: remove homepage-specific hiding
       if (!isHome) {
-        // Remove early-hide style if still present
-        const earlyHideEl = document.getElementById('info-filter-early-hide');
-        if (earlyHideEl) earlyHideEl.remove();
+        // Remove nuclear hide style if still present
+        const nuclearHideEl = document.getElementById('info-filter-nuclear-hide');
+        if (nuclearHideEl) nuclearHideEl.remove();
+
+        // Remove cover on non-homepage
+        const coverEl = document.getElementById('info-filter-cover');
+        if (coverEl) coverEl.remove();
 
         // Remove homepage class (so CSS rules stop targeting this page)
         document.documentElement.classList.remove('info-filter-homepage');
