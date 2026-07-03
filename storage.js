@@ -60,13 +60,16 @@ const Storage = {
   },
 
   /**
-   * Update duration for last visited page
+   * Update duration for a specific visited entry by index
    */
-  async updateLastVisitedDuration(duration) {
+  async updateLastVisitedDuration(duration, index) {
     const data = await this.getTodayData();
     if (data.visited.length > 0) {
-      data.visited[data.visited.length - 1].duration = duration;
-      await this.saveTodayData(data);
+      const idx = index !== undefined ? index : data.visited.length - 1;
+      if (idx >= 0 && idx < data.visited.length) {
+        data.visited[idx].duration = duration;
+        await this.saveTodayData(data);
+      }
     }
     return data;
   },
@@ -98,6 +101,31 @@ const Storage = {
    */
   async getAllData() {
     return await chrome.storage.local.get(null);
+  },
+
+  /**
+   * Clean up data older than N days to prevent storage quota overflow
+   * Keeps only the last 30 days of data
+   */
+  async cleanup(maxDays = 30) {
+    const allData = await this.getAllData();
+    const today = new Date();
+    let keysToDelete = [];
+
+    for (const key of Object.keys(allData)) {
+      // Only clean up date-formatted keys (YYYY-MM-DD)
+      if (/^\d{4}-\d{2}-\d{2}$/.test(key)) {
+        const keyDate = new Date(key);
+        const diffDays = (today - keyDate) / (1000 * 60 * 60 * 24);
+        if (diffDays > maxDays) {
+          keysToDelete.push(key);
+        }
+      }
+    }
+
+    if (keysToDelete.length > 0) {
+      await chrome.storage.local.remove(keysToDelete);
+    }
   }
 };
 

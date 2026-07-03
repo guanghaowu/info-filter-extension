@@ -3,22 +3,8 @@
 (function() {
   'use strict';
 
-  // EARLIEST POSSIBLE: Inject hiding rules BEFORE any DOM operations
-  // This runs at document_start, before bilibili renders anything
-  // Only apply on homepage (not video pages /search pages)
-  if (window.location.hostname === 'bilibili.com' ||
-      window.location.hostname === 'www.bilibili.com') {
-    const path = window.location.pathname;
-    const isHomepagePath = (path === '/' || path === '/index.html');
-    const isVideoPath = path.startsWith('/video/');
-    const isSearchHost = window.location.hostname === 'search.bilibili.com';
-    if (isHomepagePath && !isVideoPath && !isSearchHost) {
-      const s = document.createElement('style');
-      s.textContent = '#app > * { display: none !important; }';
-      s.id = 'info-filter-early-hide';
-      document.documentElement.appendChild(s);
-    }
-  }
+  // EARLIEST POSSIBLE: No longer needed — init() handles early-hide creation
+  // after DOM is available, which is sufficient since overlay covers the page anyway
 
   let startTime = Date.now();
   let currentPlatform = null;
@@ -174,19 +160,13 @@
     }
 
     if (currentPlatform === 'youtube') {
-      // Hide homepage feed
-      if (isHomepage()) {
-        document.querySelectorAll('ytd-rich-grid-row, ytd-rich-item-renderer').forEach(el => {
-          el.classList.add('info-filter-hidden');
-        });
-      }
-
-      // Hide sidebar
+      // Hide homepage feed — relies on .info-filter-youtube-home CSS class
+      // No JS hiding needed for feed; CSS handles it
+      // Sidebar and comments: hide on all pages (not just homepage)
       document.querySelectorAll('ytd-compact-video-renderer, ytd-compact-autoplay-renderer').forEach(el => {
         el.classList.add('info-filter-hidden');
       });
 
-      // Hide comments
       document.querySelectorAll('ytd-comments').forEach(el => {
         el.classList.add('info-filter-hidden');
       });
@@ -229,19 +209,29 @@
   }
 
   /**
-   * Update duration on page leave
+   * Update duration on page leave (multiple fallback events)
    */
+  function saveDuration() {
+    if (currentDayKey === null || currentVisitedIndex === null) return;
+    const duration = Math.floor((Date.now() - startTime) / 1000);
+    const data = { currentDayKey, currentVisitedIndex, duration };
+    // Post a message to background script for reliable saving
+    try {
+      chrome.runtime.sendMessage({ type: 'SAVE_DURATION', data });
+    } catch(e) {
+      // If connection fails, fall back to sync save in storage
+      InfoFilterStorage.updateLastVisitedDuration(duration, data.currentVisitedIndex).catch(() => {});
+    }
+  }
+
   function setupDurationTracking() {
-    window.addEventListener('beforeunload', () => {
-      if (currentDayKey === null || currentVisitedIndex === null) return;
-      const duration = Math.floor((Date.now() - startTime) / 1000);
-      chrome.storage.local.get(currentDayKey, (result) => {
-        const data = result[currentDayKey];
-        if (data && data.visited[currentVisitedIndex]) {
-          data.visited[currentVisitedIndex].duration = duration;
-          chrome.storage.local.set({ [currentDayKey]: data });
-        }
-      });
+    window.addEventListener('beforeunload', saveDuration);
+    window.addEventListener('pagehide', saveDuration);
+    // Save when tab becomes hidden (user switches tabs)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        saveDuration();
+      }
     });
   }
 
@@ -282,6 +272,10 @@
     // Mark page type via body class for CSS targeting
     if (isHomepage() && !isSearchPage()) {
       document.documentElement.classList.add('info-filter-homepage');
+      // Add platform-specific class for YouTube CSS rules
+      if (currentPlatform === 'youtube') {
+        document.documentElement.classList.add('info-filter-youtube-home');
+      }
     } else if (isSearchPage()) {
       document.documentElement.classList.add('info-filter-search');
       // If coming from bilibili overlay, also apply homepage hiding during transition
@@ -398,15 +392,22 @@
       subtree: true
     });
 
-    // Watch for SPA route changes (bilibili uses pushState/replaceState)
-    let lastUrl = location.href;
-    const urlObserver = new MutationObserver(() => {
-      if (location.href !== lastUrl) {
-        lastUrl = location.href;
-        onUrlChange();
-      }
+    // Intercept pushState/replaceState for reliable SPA navigation detection
+    const origPushState = history.pushState;
+    const origReplaceState = history.replaceState;
+    history.pushState = function(...args) {
+      origPushState.apply(this, args);
+      onUrlChange();
+    };
+    history.replaceState = function(...args) {
+      origReplaceState.apply(this, args);
+      onUrlChange();
+    };
+
+    // Also listen for popstate (back/forward)
+    window.addEventListener('popstate', () => {
+      onUrlChange();
     });
-    urlObserver.observe(document, { subtree: true, childList: true });
 
     function onUrlChange() {
       const isHome = isHomepage();
@@ -421,6 +422,7 @@
 
         // Remove homepage class (so CSS rules stop targeting this page)
         document.documentElement.classList.remove('info-filter-homepage');
+        document.documentElement.classList.remove('info-filter-youtube-home');
 
         // Restore scroll
         document.body.style.overflow = '';
