@@ -1,6 +1,9 @@
 // popup.js - Popup logic
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Clean up old data on popup open
+  await InfoFilterStorage.cleanup(30);
+
   const goalList = document.getElementById('goalList');
   const visitedCount = document.getElementById('visitedCount');
   const escapeCount = document.getElementById('escapeCount');

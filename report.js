@@ -15,6 +15,9 @@ function isValidUrl(url) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Clean up old data on report open
+  await InfoFilterStorage.cleanup(30);
+
   const dateEl = document.getElementById('date');
   const goalsEl = document.getElementById('goals');
   const visitedCountEl = document.getElementById('visitedCount');

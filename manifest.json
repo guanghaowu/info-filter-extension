@@ -5,7 +5,8 @@
   "description": "帮助你在B站/YouTube学习时避免被算法推荐内容吸引",
   "permissions": [
     "storage",
-    "tabs"
+    "tabs",
+    "activeTab"
   ],
   "host_permissions": [
     "https://www.bilibili.com/*",
@@ -24,12 +25,6 @@
       "js": ["storage.js", "content.js"],
       "css": ["styles/content.css"],
       "run_at": "document_start"
-    }
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": ["overlay.html", "storage.js", "overlay.js", "styles/overlay.css"],
-      "matches": ["https://www.bilibili.com/*", "https://search.bilibili.com/*", "https://www.youtube.com/*"]
     }
   ],
   "action": {
