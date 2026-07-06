@@ -5,14 +5,12 @@ Chrome Extension (Manifest V3)，在 bilibili.com / YouTube 首页拦截推荐�
 
 ## 文件结构
 - `manifest.json` — Extension 配置（MV3, permissions, content_scripts）
-- `content.js` — 核心内容脚本：首页拦截、覆盖层注入、内容隐藏、访问追踪
-- `overlay.js` — 目标输入弹窗逻辑（iframe 内运行）
+- `content.js` — 核心内容脚本：首页拦截、直接 DOM 覆盖层注入、内容隐藏、访问追踪、SPA 导航时长保存
 - `storage.js` — chrome.storage.local 封装（目标/访问/跳过记录）
-- `background.js` — Service worker（onInstalled/onStartup）
+- `background.js` — Service worker（仅处理 content script 的时长保存消息）
 - `popup.html/js` — 扩展弹出窗口
 - `report.html/js` — 每日报告页
 - `styles/content.css` — 页面内容隐藏规则（按 info-filter-homepage/search class 区分）
-- `styles/overlay.css` — 覆盖层样式
 
 ## 硬性规则
 
@@ -28,18 +26,18 @@ Chrome Extension (Manifest V3)，在 bilibili.com / YouTube 首页拦截推荐�
 - content.js 在 `document_start` 运行，任何隐藏逻辑必须在此阶段注入
 
 ### 跨页面跳转
-- 用户在覆盖层输入目标后，overlay.js 直接 `window.parent.location.href` 跳转搜索页
-- 搜索页需要检测 `document.referrer` 判断是否从 bilibili 跳转，若是则继承首页级隐藏
-- 搜索结果加载后（300ms 延迟）移除首页隐藏规则
-- **SPA 导航**：bilibili 用 pushState/replaceState 做 SPA 路由，content script 不会重新执行。用 MutationObserver 监听 `location.href` 变化，URL 变化时调用 `onUrlChange()` 清理非首页的隐藏规则（移除 early-hide style + info-filter-homepage class）
-- 目标设置完成后（`INFO_FILTER_GOAL_SET` 消息），立即移除残留的 early-hide style
+- 用户在覆盖层输入目标后，content.js 直接 `window.location.href` 跳转搜索页
+  - **关键**：跳转前不移除 nuclear hide / cover / overlay，保持遮挡直到导航开始，避免首页内容暴露
+- **SPA 导航**：bilibili 用 pushState/replaceState 做 SPA 路由，content script 不会重新执行。拦截 pushState/replaceState + popstate/hashchange，调用 `onUrlChange()` 处理隐藏规则切换，同时保存当前页停留时长
+- `INFO_FILTER_GOAL_SET` postMessage 监听保留（兼容场景），收到后移除残留隐藏
 
 ### 禁止事项
 - 不要把 bilibili 的视频卡片选择器（`.bili-video-card` 等）写成全局隐藏规则——搜索结果和视频页都用这些 class
-- 不要在搜索页应用首页级隐藏而不移除——会导致搜索结果空白
+- 不要在搜索页应用首页级隐藏（`info-filter-homepage` class）——会导致搜索结果空白（`.main-container { display:none }` 隐藏搜索结果容器）
 - 不要在视频页隐藏任何内容——`isVideoPage()` 为 true 时，MutationObserver 跳过、CSS 不生效
 - 不要改 `run_at` 为 `document_idle`——会失去零延迟隐藏能力
-- 不要在 overlay.js 里用 postMessage 后再跳转——直接跳转更可靠
+- 不要在发起导航前移除 nuclear hide / cover / overlay——会导致首页内容短暂暴露
+- 不要隐藏 YouTube 评论——用户希望看到视频讨论内容
 
 ### 验证清单
 改完内容隐藏相关代码后，必须验证：
