@@ -48,3 +48,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   return true;  // keep the channel open for the async sendResponse
 });
+
+// SPA navigation detection.
+//
+// Content scripts run in an isolated world: patching history.pushState there
+// only patches the isolated copy, so the page's own pushState calls are never
+// seen. That is why clicking the YouTube logo used to slip past the blocker.
+// chrome.tabs.onUpdated is fired by the browser itself and does see them.
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (!changeInfo.url || !isAllowedSender(changeInfo.url)) return;
+  chrome.tabs.sendMessage(tabId, { type: 'INFO_FILTER_URL_CHANGED' })
+    .catch(() => {});  // no content script in that tab yet — it will run on load
+});

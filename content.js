@@ -433,19 +433,16 @@
    * Save duration when navigating away from current page (SPA navigation)
    */
   function setupNavigationDurationSave() {
-    // Override history methods for SPA navigation detection
-    const origPushState = history.pushState;
-    const origReplaceState = history.replaceState;
-    history.pushState = function(...args) {
-      origPushState.apply(this, args);
-      onNavigated();
-    };
-    history.replaceState = function(...args) {
-      origReplaceState.apply(this, args);
-      onNavigated();
-    };
+    // The browser tells us about SPA route changes via the background worker.
+    // Patching history.pushState here would NOT work: content scripts run in an
+    // isolated world, so the patch only covers our own copy — the page's calls
+    // go straight to the native method and we never hear about them.
+    chrome.runtime.onMessage.addListener((message) => {
+      if (message && message.type === 'INFO_FILTER_URL_CHANGED') onNavigated();
+    });
 
-    // Also save on popstate and hashchange
+    // These are real DOM events and do reach the isolated world, so handling
+    // them locally reacts a tick sooner. onNavigated() dedupes by URL.
     window.addEventListener('popstate', onNavigated);
     window.addEventListener('hashchange', onNavigated);
   }
