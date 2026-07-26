@@ -6,8 +6,8 @@ Chrome Extension (Manifest V3)，在 bilibili.com / YouTube 首页拦截推荐�
 ## 文件结构
 - `manifest.json` — Extension 配置（MV3, permissions, content_scripts）
 - `content.js` — 核心内容脚本：首页拦截、直接 DOM 覆盖层注入、内容隐藏、访问追踪、SPA 导航时长保存
-- `storage.js` — chrome.storage.local 封装（目标/访问/跳过记录）
-- `background.js` — Service worker（仅处理 content script 的时长保存消息）
+- `storage.js` — chrome.storage.local 封装（目标/访问/跳过记录）；同时被 content script 和 service worker 加载
+- `background.js` — Service worker：**唯一的存储写入者**，用 Promise 队列串行执行所有 mutation
 - `popup.html/js` — 扩展弹出窗口
 - `report.html/js` — 每日报告页
 - `styles/content.css` — 页面内容隐藏规则（按 info-filter-homepage/search class 区分）
@@ -24,6 +24,21 @@ Chrome Extension (Manifest V3)，在 bilibili.com / YouTube 首页拦截推荐�
 - **视频页**（/video/...、/watch）：**不做任何隐藏**——用户主动导航到这里是为了观看内容
 - CSS 规则通过 `info-filter-homepage` / `info-filter-search` class 区分页面类型，**不要**写无前缀的全局隐藏规则
 - content.js 在 `document_start` 运行，任何隐藏逻辑必须在此阶段注入
+
+### 存储写入路径
+- `chrome.storage.local` 对单个日期 key 做读-改-写**不是原子操作**。两个标签页同时写会丢记录。
+- 所有 mutation（`addGoal` / `addVisited` / `addEscape` / `updateVisitedDuration`）必须经 service worker：
+  storage.js 检测到 `window` 存在（content script / popup / report）就发 `INFO_FILTER_MUTATE` 消息，
+  worker 侧（`self`，无 `window`）才执行真正的读-改-写，由 background.js 的 Promise 队列串行化。
+- 只读方法（`getTodayData` / `getAllData` / `cleanup`）就地执行，不走消息。
+- background.js 用 `importScripts('storage.js')` 复用同一份逻辑——**不要**在 worker 里重复实现存储操作。
+- 消息来源校验用 `ALLOWED_HOSTS` 精确匹配 hostname，**不要**用 `includes()` 或宽松正则（`evilbilibili.com` 会绕过）。
+
+### 破戒（本次跳过）按钮
+- 每页最多一个悬浮按钮，仅当页面上确实存在 `.info-filter-hidden` 元素时注入。
+- 点击后置 `escapedThisPage = true`，`hideContent()` 据此早退——否则 MutationObserver 会立刻重新隐藏。
+- 跳过是「本次」的：`onNavigated()` 调 `resetEscapeState()` 复位并移除按钮。
+- 首页弹窗**不提供绕过入口**，这是产品核心；首页也因此天然不出现该按钮。
 
 ### 跨页面跳转
 - 用户在覆盖层输入目标后，content.js 直接 `window.location.href` 跳转搜索页
@@ -46,3 +61,5 @@ Chrome Extension (Manifest V3)，在 bilibili.com / YouTube 首页拦截推荐�
 3. 搜索结果页侧边栏推荐被隐藏
 4. 搜索结果页点击视频 → 视频能正常播放（不被隐藏）
 5. 直接访问 bilibili.com/video/BVxxx → 视频正常显示
+6. 搜索页右下角「本次跳过」→ 点击后推荐显示且不被重新隐藏，popup「破戒次数」+1
+7. 两个标签页同时导航 → report 里两条访问记录都在（不丢数据）

@@ -78,10 +78,14 @@
   display: none !important;
 }
 
-/* Escape button styles */
+/* Escape button — one per page, bottom-right.
+   z-index sits one below the goal overlay (2147483647): bilibili has floating
+   elements with very high z-index, but the overlay must always win. */
 .info-filter-escape-btn {
   position: fixed;
-  z-index: 9999;
+  bottom: 24px;
+  right: 24px;
+  z-index: 2147483646;
   padding: 8px 16px;
   background: rgba(255, 165, 0, 0.9);
   color: white;

@@ -1,4 +1,21 @@
 // storage.js - Storage utility functions
+// Loaded in two scopes: content scripts / extension pages (window) and the
+// background service worker (self, via importScripts).
+
+// Read-modify-write on a single day key is not atomic. Two tabs recording a
+// visit at the same time both read {visited: []} and both write back their own
+// single entry, so one is lost. The service worker is the only single instance
+// in the browser, so every mutation is funnelled there and serialized by the
+// queue in background.js. Reads stay local — they cannot clobber anything.
+const IN_SERVICE_WORKER = typeof window === 'undefined';
+
+async function delegate(op, args) {
+  const res = await chrome.runtime.sendMessage({ type: 'INFO_FILTER_MUTATE', op, args });
+  if (!res || !res.ok) {
+    throw new Error((res && res.error) || `storage mutation failed: ${op}`);
+  }
+  return res.result;
+}
 
 const Storage = {
   /**
@@ -37,6 +54,7 @@ const Storage = {
    * Add a goal for today
    */
   async addGoal(goalText) {
+    if (!IN_SERVICE_WORKER) return delegate('addGoal', [goalText]);
     const data = await this.getTodayData();
     data.goals.push(goalText);
     await this.saveTodayData(data);
@@ -47,6 +65,7 @@ const Storage = {
    * Add a visited page record
    */
   async addVisited(platform, title, url) {
+    if (!IN_SERVICE_WORKER) return delegate('addVisited', [platform, title, url]);
     const data = await this.getTodayData();
     data.visited.push({
       platform,
@@ -60,16 +79,17 @@ const Storage = {
   },
 
   /**
-   * Update duration for a specific visited entry by index
+   * Update duration for a specific visited entry.
+   * dayKey is explicit — a page opened before midnight must write back to the
+   * day it was recorded under, not to whatever getToday() returns on unload.
    */
-  async updateLastVisitedDuration(duration, index) {
-    const data = await this.getTodayData();
-    if (data.visited.length > 0) {
-      const idx = index !== undefined ? index : data.visited.length - 1;
-      if (idx >= 0 && idx < data.visited.length) {
-        data.visited[idx].duration = duration;
-        await this.saveTodayData(data);
-      }
+  async updateVisitedDuration(dayKey, index, duration) {
+    if (!IN_SERVICE_WORKER) return delegate('updateVisitedDuration', [dayKey, index, duration]);
+    const result = await chrome.storage.local.get(dayKey);
+    const data = result[dayKey];
+    if (data && data.visited && data.visited[index]) {
+      data.visited[index].duration = duration;
+      await chrome.storage.local.set({ [dayKey]: data });
     }
     return data;
   },
@@ -78,6 +98,7 @@ const Storage = {
    * Add an escape record
    */
   async addEscape(platform, section) {
+    if (!IN_SERVICE_WORKER) return delegate('addEscape', [platform, section]);
     const data = await this.getTodayData();
     data.escapes.push({
       platform,
@@ -129,5 +150,5 @@ const Storage = {
   }
 };
 
-// Make available globally
-window.InfoFilterStorage = Storage;
+// Make available globally — `window` in pages, `self` in the service worker
+(IN_SERVICE_WORKER ? self : window).InfoFilterStorage = Storage;
