@@ -61,11 +61,14 @@
   display: none !important;
 }
 
-/* Bilibili - Search page only: hide the hot-search panel that pops up
-   when the search input is focused. The popover shows search history +
-   .trending (bilibili top-10). History is kept (lets users re-run past
-   searches) — trending is purely an attention-grabbing distraction. */
-.info-filter-search .search-panel-popover .trending {
+/* Bilibili - Hide the bilibili热搜 top-10 popover anywhere it appears.
+   B 站 has two different search-input components, both rendering .trending:
+     - search.bilibili.com wraps it in .search-panel-popover
+     - video page center search + top nav wrap it in .search-panel
+   Scoping to .info-filter-search only covered search.bilibili.com, so the
+   hot list still leaked through video-page search. */
+.search-panel-popover .trending,
+.search-panel .trending {
   display: none !important;
 }
 
