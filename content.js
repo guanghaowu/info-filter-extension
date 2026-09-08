@@ -16,6 +16,7 @@
   const _path = window.location.pathname;
   const _isBilibiliHome = _hostname.includes('bilibili.com') && !_hostname.includes('search.') && (_path === '/' || _path === '/index.html');
   const _isYoutubeHome = _hostname.includes('youtube.com') && _path === '/';
+  const _isZhihu = _hostname === 'www.zhihu.com';
   if (_isBilibiliHome || _isYoutubeHome) {
     const nuclearStyle = document.createElement('style');
     nuclearStyle.id = 'info-filter-nuclear-hide';
@@ -37,6 +38,11 @@
     // NOTE: Do NOT add info-filter-homepage here — its CSS rules (e.g.
     // .main-container { display:none }) would hide search results content.
     document.documentElement.classList.add('info-filter-search');
+  } else if (_isZhihu) {
+    // Zhihu page-class for CSS scoping of .HotSearchCard / [role="listbox"] rules.
+    // Deliberately no nuclear hide / cover / overlay here — Zhihu scope is hot-search
+    // + search-discover only, NOT homepage blocking (see CLAUDE.md).
+    document.documentElement.classList.add('info-filter-zhihu');
   }
 
   let startTime = Date.now();
@@ -62,6 +68,7 @@
     const hostname = window.location.hostname;
     if (hostname.includes('bilibili.com')) return 'bilibili';
     if (hostname.includes('youtube.com')) return 'youtube';
+    if (hostname.includes('zhihu.com')) return 'zhihu';
     return null;
   }
 
@@ -69,6 +76,7 @@
    * Check if on search results page
    */
   function isSearchPage() {
+    if (currentPlatform === 'zhihu') return window.location.pathname.startsWith('/search');
     return window.location.hostname === 'search.bilibili.com';
   }
 
@@ -82,6 +90,11 @@
     }
     if (currentPlatform === 'youtube') {
       return path === '/watch';
+    }
+    if (currentPlatform === 'zhihu') {
+      // 答案页 / 专栏 / 视频 / 直播 — user-navigated content pages, hide nothing.
+      return /^\/(p|video|column|livings|zhuanlan|zvideo)/.test(path)
+        || /^\/question\/[^/]+\/answer/.test(path);
     }
     return false;
   }
@@ -98,6 +111,9 @@
     if (currentPlatform === 'youtube') {
       return path === '/';
     }
+    // Zhihu homepage is intentionally NOT flagged as 'homepage' — we don't block
+    // the Zhihu home (no goal overlay, no nuclear hide). It falls through to
+    // hideContent() which hides hot-search + search-discover only.
     return false;
   }
 
@@ -281,6 +297,16 @@
       // No JS hiding needed for feed; CSS handles it
       // Sidebar: hide recommendations (keep comments visible — user wants to see discussions)
       document.querySelectorAll('ytd-compact-video-renderer, ytd-compact-autoplay-renderer').forEach(el => {
+        el.classList.add('info-filter-hidden');
+      });
+    }
+
+    if (currentPlatform === 'zhihu') {
+      // CSS handles the actual hiding; this branch exists so ensureEscapeButton()
+      // can detect there is something to escape (it watches for .info-filter-hidden).
+      // Hot-search card appears on home + search pages; search-suggestion popover
+      // appears on any page when the search input is focused.
+      document.querySelectorAll('.HotSearchCard, [role="listbox"]').forEach(el => {
         el.classList.add('info-filter-hidden');
       });
     }

@@ -72,6 +72,24 @@
   display: none !important;
 }
 
+/* Zhihu - 首页 + 搜索结果页：屏蔽热榜卡片 (.HotSearchCard)
+   出现位置：首页右侧栏 + 搜索结果页 .Search-container 内部。
+   HotSearchCard 包含标题"大家都在搜"、列表、单条带热度数字的项。 */
+.info-filter-zhihu .HotSearchCard,
+.info-filter-zhihu .HotSearchCard-list,
+.info-filter-zhihu .HotSearchCard-item {
+  display: none !important;
+}
+
+/* Zhihu - 搜索框聚焦时弹出的搜索发现 / 热搜词。
+   知乎搜索框是 ARIA combobox 模式（input 上 role=combobox + aria-haspopup="true"），
+   弹层通常挂载为 [role="listbox"]。这是 ARIA 标准属性的兜底匹配。
+   TODO: 用户实测后若误伤/漏网，按真实 DOM 收窄选择器（最常见是换成
+   紧邻 .SearchBar 的兄弟节点，或具体的 .SearchBar-suggestion 类）。 */
+.info-filter-zhihu [role="listbox"] {
+  display: none !important;
+}
+
 /* YouTube - Homepage feed */
 .info-filter-youtube-home ytd-rich-grid-row,
 .info-filter-youtube-home ytd-rich-item-renderer {

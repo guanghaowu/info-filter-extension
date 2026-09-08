@@ -14,7 +14,7 @@ chrome.runtime.onInstalled.addListener((details) => {
 const ALLOWED_OPS = ['addGoal', 'addVisited', 'addEscape', 'updateVisitedDuration'];
 // Exact hosts, mirroring content_scripts.matches in manifest.json. Substring or
 // loose-regex matching would let evilbilibili.com through.
-const ALLOWED_HOSTS = ['www.bilibili.com', 'search.bilibili.com', 'www.youtube.com'];
+const ALLOWED_HOSTS = ['www.bilibili.com', 'search.bilibili.com', 'www.youtube.com', 'www.zhihu.com'];
 
 function isAllowedSender(url) {
   try {
