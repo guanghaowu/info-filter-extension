@@ -61,6 +61,14 @@
   display: none !important;
 }
 
+/* Bilibili - Search page only: hide the hot-search panel that pops up
+   when the search input is focused. The popover shows search history +
+   .trending (bilibili top-10). History is kept (lets users re-run past
+   searches) — trending is purely an attention-grabbing distraction. */
+.info-filter-search .search-panel-popover .trending {
+  display: none !important;
+}
+
 /* YouTube - Homepage feed */
 .info-filter-youtube-home ytd-rich-grid-row,
 .info-filter-youtube-home ytd-rich-item-renderer {
