@@ -1,7 +1,7 @@
 # 信息源过滤器 Chrome Extension
 
 ## 项目概述
-Chrome Extension (Manifest V3)，在 bilibili.com / YouTube 首页拦截推荐内容，强制用户设定学习目标后跳转搜索结果页。纯本地存储，无后端。
+Chrome Extension (Manifest V3)。在 bilibili.com / YouTube 首页拦截推荐内容，强制用户设定学习目标后跳转搜索结果页；在 zhihu.com 只屏蔽热榜与搜索发现弹层，不拦截首页。纯本地存储，无后端。
 
 ## 文件结构
 - `manifest.json` — Extension 配置（MV3, permissions, content_scripts）
@@ -19,11 +19,13 @@ Chrome Extension (Manifest V3)，在 bilibili.com / YouTube 首页拦截推荐�
   - `isHomepage()`：bilibili `/` 或 `/index.html`；YouTube `/`
   - `isVideoPage()`：bilibili `/video/...`；YouTube `/watch`
   - `isSearchPage()`：`search.bilibili.com` 子域名
+  - **知乎**：`isSearchPage` 匹配 `/search` 开头；`isVideoPage` 匹配答案页/专栏/视频/直播；`isHomepage` **永远 false**
 - **首页**（bilibili.com /）：IIFE 顶部**仅在首页路径**注入 `#app > * { display:none }`，同时创建白色 cover div
 - **搜索页**（search.bilibili.com）：隐藏侧边栏推荐，保留搜索结果
 - **视频页**（/video/...、/watch）：**不做任何隐藏**——用户主动导航到这里是为了观看内容
 - CSS 规则通过 `info-filter-homepage` / `info-filter-search` class 区分页面类型，**不要**写无前缀的全局隐藏规则
 - content.js 在 `document_start` 运行，任何隐藏逻辑必须在此阶段注入
+- **知乎特例**（zhihu.com）：不做首页拦截（不弹目标输入浮层、不加 nuclear hide / cover / overlay）。仅在 `.info-filter-zhihu` class 作用域下隐藏热榜（`.HotSearchCard`）与搜索框弹层（`[role="listbox"]` 兜底）。`isHomepage()` 永远 false 是必要的——init() 里 `if (isHomepage()) applyHomepageBlock()` 是 platform-neutral 的，若知乎 `/` 被识别为 homepage 会触发 B 站的目标输入浮层，跳到 search.bilibili.com（commit 1b9cc37 修复）。
 
 ### 存储写入路径
 - `chrome.storage.local` 对单个日期 key 做读-改-写**不是原子操作**。两个标签页同时写会丢记录。
@@ -53,6 +55,7 @@ Chrome Extension (Manifest V3)，在 bilibili.com / YouTube 首页拦截推荐�
 - 不要改 `run_at` 为 `document_idle`——会失去零延迟隐藏能力
 - 不要在发起导航前移除 nuclear hide / cover / overlay——会导致首页内容短暂暴露
 - 不要隐藏 YouTube 评论——用户希望看到视频讨论内容
+- **不要给 zhihu.com 加首页拦截**——知乎范围内只屏蔽热榜 + 搜索发现，不弹目标输入浮层、不加 nuclear hide / cover / overlay。`isHomepage()` 知乎必须返回 false（参考 commit 1b9cc37）。
 
 ### 验证清单
 改完内容隐藏相关代码后，必须验证：
@@ -63,3 +66,7 @@ Chrome Extension (Manifest V3)，在 bilibili.com / YouTube 首页拦截推荐�
 5. 直接访问 bilibili.com/video/BVxxx → 视频正常显示
 6. 搜索页右下角「本次跳过」→ 点击后推荐显示且不被重新隐藏，popup「破戒次数」+1
 7. 两个标签页同时导航 → report 里两条访问记录都在（不丢数据）
+8. 打开 zhihu.com → 不弹搜索框（首页不被拦截，正常浏览）
+9. 知乎首页 / 搜索结果页 → 右侧"大家都在搜"热榜不显示
+10. 知乎搜索框聚焦 → 搜索发现 / 热搜词弹层不显示
+11. 知乎答案页 / 专栏页 → 正常显示（不被拦截）
